@@ -30,6 +30,7 @@ async def generate_email(
     tone: int = Form(50),
     length: int = Form(50),
     temperature: int = Form(70),
+    use_lists: bool = Form(False),
     custom_instructions: str = Form(""),
 ):
     """Generate an email based on form input."""
@@ -41,6 +42,7 @@ async def generate_email(
         tone=tone,
         length=length,
         temperature=temperature,
+        use_lists=use_lists,
         custom_instructions=custom_instructions,
     )
 
