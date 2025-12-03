@@ -1,18 +1,11 @@
 """Email generation service using Groq API."""
 
+import json
 from groq import Groq
 
 from app.config import settings
 from app.models import EmailRequest, EmailResponse
-
-
-SYSTEM_PROMPT = """You are an expert email writer. Generate professional emails based on the given parameters.
-Always respond in this exact format:
-SUBJECT: [Your subject line here]
----
-[Your email body here]
-
-Do not include any other text or explanation outside this format."""
+from app.prompts import get_prompt, IMPROVE_PROMPT
 
 
 class EmailService:
@@ -51,20 +44,16 @@ class EmailService:
         parts.append(f"\n- Tone: {request.tone_description}")
         parts.append(f"- Length: {request.length_description}")
 
-        if request.is_cold_email:
-            parts.append("- Type: Cold email (first contact, no prior relationship)")
-        else:
-            parts.append("- Type: Regular email")
-
         if request.recipient_name:
             parts.append(f"- Recipient name: {request.recipient_name}")
+
+        if request.sender_name:
+            parts.append(f"- Sign off with: {request.sender_name}")
 
         if request.incoming_email:
             parts.append(
                 f"\n- This is a REPLY to the following email:\n```\n{request.incoming_email}\n```"
             )
-        else:
-            parts.append("\n- This is a NEW email (not a reply)")
 
         if request.custom_instructions:
             parts.append(f"\n- Additional instructions: {request.custom_instructions}")
@@ -72,21 +61,22 @@ class EmailService:
         return "\n".join(parts)
 
     def parse_response(self, content: str) -> EmailResponse:
-        """Parse the LLM response into subject and body.
+        """Parse the JSON response into EmailResponse.
 
         Args:
-            content: Raw response from LLM.
+            content: JSON response from LLM.
 
         Returns:
             Parsed email response.
         """
-        if "SUBJECT:" in content and "---" in content:
-            parts = content.split("---", 1)
-            subject = parts[0].replace("SUBJECT:", "").strip()
-            body = parts[1].strip() if len(parts) > 1 else ""
-            return EmailResponse(subject=subject, body=body)
-
-        return EmailResponse(subject="Generated Email", body=content)
+        try:
+            data = json.loads(content)
+            return EmailResponse(
+                subject=data.get("subject", "Generated Email"),
+                body=data.get("body", content),
+            )
+        except json.JSONDecodeError:
+            return EmailResponse(subject="Generated Email", body=content)
 
     async def generate(self, request: EmailRequest) -> EmailResponse:
         """Generate an email based on the request.
@@ -103,14 +93,43 @@ class EmailService:
         """
         prompt = self.build_prompt(request)
 
+        system_prompt = get_prompt(request.preset)
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=request.temperature_float,
+            max_tokens=1024,
+            response_format={"type": "json_object"},
+        )
+
+        content = response.choices[0].message.content
+        return self.parse_response(content)
+
+    async def improve(self, subject: str, body: str) -> EmailResponse:
+        """Improve an existing email.
+
+        Args:
+            subject: Current email subject.
+            body: Current email body.
+
+        Returns:
+            Improved email with subject and body.
+        """
+        prompt = f"Improve this email:\n\nSubject: {subject}\n\nBody:\n{body}"
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": IMPROVE_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.7,
             max_tokens=1024,
+            response_format={"type": "json_object"},
         )
 
         content = response.choices[0].message.content

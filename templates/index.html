@@ -75,7 +75,7 @@
 
         <div class="grid lg:grid-cols-2 gap-6">
             <!-- Left Column - Form -->
-            <form hx-post="/generate" hx-target="#result" hx-swap="innerHTML" class="space-y-4">
+            <form id="email-form" hx-post="/generate" hx-target="#result" hx-swap="innerHTML" hx-indicator="#loading" class="space-y-4">
                 <!-- Reply To -->
                 <div class="glass rounded-2xl p-6">
                     <label class="flex items-center gap-2 text-sm font-medium text-blue-400 mb-3">
@@ -102,27 +102,49 @@
                         Settings
                     </label>
 
-                    <!-- Recipient Name -->
+                    <!-- Preset Selection -->
                     <div>
-                        <label class="block text-xs text-gray-400 mb-2">Recipient Name</label>
-                        <input
-                            type="text"
-                            name="recipient_name"
-                            placeholder="e.g., John Smith"
-                            class="w-full bg-black/30 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                        >
+                        <label class="block text-xs text-gray-400 mb-2">Email Type</label>
+                        <input type="hidden" name="preset" id="preset-input" value="general">
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="selectPreset('general', this)" class="preset-btn active px-3 py-2 rounded-lg text-sm font-medium bg-blue-500/20 text-blue-400 transition-all">
+                                General
+                            </button>
+                            <button type="button" onclick="selectPreset('application', this)" class="preset-btn px-3 py-2 rounded-lg text-sm font-medium bg-black/20 text-gray-400 hover:bg-white/5 transition-all">
+                                Application
+                            </button>
+                            <button type="button" onclick="selectPreset('introduction', this)" class="preset-btn px-3 py-2 rounded-lg text-sm font-medium bg-black/20 text-gray-400 hover:bg-white/5 transition-all">
+                                Introduction
+                            </button>
+                            <button type="button" onclick="selectPreset('cold_email', this)" class="preset-btn px-3 py-2 rounded-lg text-sm font-medium bg-black/20 text-gray-400 hover:bg-white/5 transition-all">
+                                Cold Email
+                            </button>
+                            <button type="button" onclick="selectPreset('follow_up', this)" class="preset-btn px-3 py-2 rounded-lg text-sm font-medium bg-black/20 text-gray-400 hover:bg-white/5 transition-all">
+                                Follow-up
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Cold Email Toggle -->
-                    <div class="flex items-center justify-between bg-black/20 rounded-xl p-4">
+                    <!-- Names -->
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <p class="font-medium text-white">Cold Email</p>
-                            <p class="text-xs text-gray-400">First contact, no prior relationship</p>
+                            <label class="block text-xs text-gray-400 mb-2">Recipient</label>
+                            <input
+                                type="text"
+                                name="recipient_name"
+                                placeholder="Their name"
+                                class="w-full bg-black/30 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            >
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="is_cold_email" value="true" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-2">Sign off as</label>
+                            <input
+                                type="text"
+                                name="sender_name"
+                                placeholder="Your name"
+                                class="w-full bg-black/30 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            >
+                        </div>
                     </div>
 
                     <!-- Tone Slider -->
@@ -164,6 +186,27 @@
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>Brief</span>
                             <span>Detailed</span>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-white">Creativity</label>
+                            <span id="temp-label" class="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">Balanced</span>
+                        </div>
+                        <input
+                            type="range"
+                            name="temperature"
+                            min="0"
+                            max="100"
+                            value="70"
+                            class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            oninput="updateTempLabel(this.value)"
+                        >
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Precise</span>
+                            <span>Creative</span>
                         </div>
                     </div>
                 </div>
@@ -220,7 +263,33 @@
                         </svg>
                     </div>
                     <p class="text-gray-400">Your email will appear here</p>
-                    <p class="text-gray-500 text-sm">Configure options and click Generate</p>
+                    <p class="text-gray-500 text-sm">Press <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-xs">⌘</kbd> + <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-xs">Enter</kbd> to generate</p>
+                </div>
+            </div>
+
+            <!-- Loading Skeleton (shown during request) -->
+            <div id="loading" class="glass rounded-2xl p-6 min-h-[400px] hidden htmx-request:block absolute inset-0 lg:relative">
+                <div class="flex items-center gap-2 text-blue-400 mb-4">
+                    <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    <div class="h-5 w-32 bg-white/10 rounded animate-pulse"></div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="h-3 w-16 bg-white/10 rounded mb-2 animate-pulse"></div>
+                        <div class="h-12 bg-white/5 rounded-xl animate-pulse"></div>
+                    </div>
+                    <div>
+                        <div class="h-3 w-12 bg-white/10 rounded mb-2 animate-pulse"></div>
+                        <div class="space-y-2">
+                            <div class="h-4 bg-white/5 rounded animate-pulse"></div>
+                            <div class="h-4 bg-white/5 rounded animate-pulse w-5/6"></div>
+                            <div class="h-4 bg-white/5 rounded animate-pulse w-4/6"></div>
+                            <div class="h-4 bg-white/5 rounded animate-pulse w-5/6"></div>
+                            <div class="h-4 bg-white/5 rounded animate-pulse w-3/6"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,6 +314,25 @@
             else label.textContent = 'Comprehensive';
         }
 
+        function updateTempLabel(value) {
+            const label = document.getElementById('temp-label');
+            if (value < 20) label.textContent = 'Precise';
+            else if (value < 40) label.textContent = 'Focused';
+            else if (value < 60) label.textContent = 'Balanced';
+            else if (value < 80) label.textContent = 'Creative';
+            else label.textContent = 'Experimental';
+        }
+
+        function selectPreset(preset, button) {
+            document.getElementById('preset-input').value = preset;
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-blue-500/20', 'text-blue-400');
+                btn.classList.add('bg-black/20', 'text-gray-400');
+            });
+            button.classList.remove('bg-black/20', 'text-gray-400');
+            button.classList.add('active', 'bg-blue-500/20', 'text-blue-400');
+        }
+
         function copyToClipboard(text, button) {
             navigator.clipboard.writeText(text).then(() => {
                 const originalText = button.innerHTML;
@@ -252,6 +340,14 @@
                 setTimeout(() => button.innerHTML = originalText, 1500);
             });
         }
+
+        // Keyboard shortcut: Cmd+Enter or Ctrl+Enter to generate
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('email-form').requestSubmit();
+            }
+        });
     </script>
 </body>
 </html>

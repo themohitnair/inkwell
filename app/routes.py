@@ -23,20 +23,24 @@ async def index(request: Request):
 @router.post("/generate", response_class=HTMLResponse)
 async def generate_email(
     request: Request,
+    preset: str = Form("general"),
     incoming_email: str = Form(""),
     recipient_name: str = Form(""),
-    is_cold_email: bool = Form(False),
+    sender_name: str = Form(""),
     tone: int = Form(50),
     length: int = Form(50),
+    temperature: int = Form(70),
     custom_instructions: str = Form(""),
 ):
     """Generate an email based on form input."""
     email_request = EmailRequest(
+        preset=preset,
         incoming_email=incoming_email,
         recipient_name=recipient_name,
-        is_cold_email=is_cold_email,
+        sender_name=sender_name,
         tone=tone,
         length=length,
+        temperature=temperature,
         custom_instructions=custom_instructions,
     )
 
@@ -55,6 +59,26 @@ async def generate_email(
         return templates.TemplateResponse(
             "partials/error.html",
             {"request": request, "error": f"Failed to generate email: {str(e)}"},
+        )
+
+
+@router.post("/improve", response_class=HTMLResponse)
+async def improve_email(
+    request: Request,
+    current_subject: str = Form(""),
+    current_body: str = Form(""),
+):
+    """Improve an existing email."""
+    try:
+        result = await email_service.improve(current_subject, current_body)
+        return templates.TemplateResponse(
+            "partials/result.html",
+            {"request": request, "subject": result.subject, "body": result.body},
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "partials/error.html",
+            {"request": request, "error": f"Failed to improve email: {str(e)}"},
         )
 
 

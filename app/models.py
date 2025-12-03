@@ -3,6 +3,8 @@
 from pydantic import BaseModel, Field
 from enum import Enum
 
+from app.prompts import EmailPreset
+
 
 class ToneLevel(str, Enum):
     """Email tone levels."""
@@ -27,12 +29,19 @@ class LengthLevel(str, Enum):
 class EmailRequest(BaseModel):
     """Request model for email generation."""
 
+    preset: EmailPreset = Field(default=EmailPreset.GENERAL, description="Email type preset")
     incoming_email: str = Field(default="", description="Email being replied to")
     recipient_name: str = Field(default="", description="Name of the recipient")
-    is_cold_email: bool = Field(default=False, description="Whether this is a cold email")
+    sender_name: str = Field(default="", description="Sender's name for signature")
     tone: int = Field(default=50, ge=0, le=100, description="Tone slider value (0=formal, 100=casual)")
     length: int = Field(default=50, ge=0, le=100, description="Length slider value (0=brief, 100=detailed)")
+    temperature: int = Field(default=70, ge=0, le=100, description="Creativity slider (0=precise, 100=creative)")
     custom_instructions: str = Field(default="", description="Additional instructions")
+
+    @property
+    def temperature_float(self) -> float:
+        """Convert slider value to 0.0-1.0 range."""
+        return self.temperature / 100.0
 
     @property
     def tone_level(self) -> ToneLevel:

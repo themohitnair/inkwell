@@ -3,17 +3,10 @@
 
 import uvicorn
 
-from app.config import settings
-
 
 def main():
     """Run the application server."""
-    uvicorn.run(
-        "app.main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=settings.debug,
-    )
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000)
 
 
 if __name__ == "__main__":
