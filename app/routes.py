@@ -32,6 +32,11 @@ async def generate_email(
     temperature: int = Form(70),
     use_lists: bool = Form(False),
     custom_instructions: str = Form(""),
+    urgency: int = Form(0),
+    cta_strength: int = Form(50),
+    politeness: int = Form(50),
+    salutation_style: str = Form("standard"),
+    sign_off_style: str = Form("professional"),
 ):
     """Generate an email based on form input."""
     email_request = EmailRequest(
@@ -44,13 +49,23 @@ async def generate_email(
         temperature=temperature,
         use_lists=use_lists,
         custom_instructions=custom_instructions,
+        urgency=urgency,
+        cta_strength=cta_strength,
+        politeness=politeness,
+        salutation_style=salutation_style,
+        sign_off_style=sign_off_style,
     )
 
     try:
         result = await email_service.generate(email_request)
         return templates.TemplateResponse(
             "partials/result.html",
-            {"request": request, "subject": result.subject, "body": result.body},
+            {
+                "request": request,
+                "subject": result.subject,
+                "subject_variants": result.subject_variants,
+                "body": result.body,
+            },
         )
     except ValueError as e:
         return templates.TemplateResponse(
@@ -61,26 +76,6 @@ async def generate_email(
         return templates.TemplateResponse(
             "partials/error.html",
             {"request": request, "error": f"Failed to generate email: {str(e)}"},
-        )
-
-
-@router.post("/improve", response_class=HTMLResponse)
-async def improve_email(
-    request: Request,
-    current_subject: str = Form(""),
-    current_body: str = Form(""),
-):
-    """Improve an existing email."""
-    try:
-        result = await email_service.improve(current_subject, current_body)
-        return templates.TemplateResponse(
-            "partials/result.html",
-            {"request": request, "subject": result.subject, "body": result.body},
-        )
-    except Exception as e:
-        return templates.TemplateResponse(
-            "partials/error.html",
-            {"request": request, "error": f"Failed to improve email: {str(e)}"},
         )
 
 

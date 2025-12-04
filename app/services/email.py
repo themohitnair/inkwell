@@ -5,7 +5,7 @@ from groq import Groq
 
 from app.config import settings
 from app.models import EmailRequest, EmailResponse
-from app.prompts import get_prompt, IMPROVE_PROMPT
+from app.prompts import get_prompt
 
 
 class EmailService:
@@ -43,15 +43,23 @@ class EmailService:
         parts = ["Generate an email with the following specifications:"]
         parts.append(f"\n- Tone: {request.tone_description}")
         parts.append(f"- Length: {request.length_description}")
+        parts.append(f"- Politeness: {request.politeness_description}")
+        parts.append(f"- Call-to-action: {request.cta_description}")
+
+        if request.urgency_description:
+            parts.append(f"- Urgency: {request.urgency_description}")
 
         if request.use_lists:
             parts.append("- Format: Use bullet points (with dashes -) and numbered lists where appropriate to organize information clearly")
+
+        parts.append(f"- Salutation: {request.salutation_description}")
+        parts.append(f"- Sign-off: {request.sign_off_description}")
 
         if request.recipient_name:
             parts.append(f"- Recipient name: {request.recipient_name}")
 
         if request.sender_name:
-            parts.append(f"- Sign off with: {request.sender_name}")
+            parts.append(f"- Sender name (for signature): {request.sender_name}")
 
         if request.incoming_email:
             parts.append(
@@ -76,10 +84,11 @@ class EmailService:
             data = json.loads(content)
             return EmailResponse(
                 subject=data.get("subject", "Generated Email"),
+                subject_variants=data.get("subject_variants", []),
                 body=data.get("body", content),
             )
         except json.JSONDecodeError:
-            return EmailResponse(subject="Generated Email", body=content)
+            return EmailResponse(subject="Generated Email", subject_variants=[], body=content)
 
     async def generate(self, request: EmailRequest) -> EmailResponse:
         """Generate an email based on the request.
@@ -105,32 +114,6 @@ class EmailService:
                 {"role": "user", "content": prompt},
             ],
             temperature=request.temperature_float,
-            max_tokens=1024,
-            response_format={"type": "json_object"},
-        )
-
-        content = response.choices[0].message.content
-        return self.parse_response(content)
-
-    async def improve(self, subject: str, body: str) -> EmailResponse:
-        """Improve an existing email.
-
-        Args:
-            subject: Current email subject.
-            body: Current email body.
-
-        Returns:
-            Improved email with subject and body.
-        """
-        prompt = f"Improve this email:\n\nSubject: {subject}\n\nBody:\n{body}"
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": IMPROVE_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.7,
             max_tokens=1024,
             response_format={"type": "json_object"},
         )
