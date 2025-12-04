@@ -4,7 +4,7 @@ import json
 from groq import Groq
 
 from app.config import settings
-from app.models import EmailRequest, EmailResponse
+from app.models import EmailRequest, EmailResponse, calculate_spam_score, Language
 from app.prompts import get_prompt
 
 
@@ -41,6 +41,11 @@ class EmailService:
             Formatted prompt string.
         """
         parts = ["Generate an email with the following specifications:"]
+
+        # Language (if not English)
+        if request.language != Language.ENGLISH:
+            parts.append(f"\n- IMPORTANT: Write the entire email in {request.language_description}")
+
         parts.append(f"\n- Tone: {request.tone_description}")
         parts.append(f"- Length: {request.length_description}")
         parts.append(f"- Politeness: {request.politeness_description}")
@@ -48,6 +53,26 @@ class EmailService:
 
         if request.urgency_description:
             parts.append(f"- Urgency: {request.urgency_description}")
+
+        # Audience type
+        if request.audience_description:
+            parts.append(f"- Audience: {request.audience_description}")
+
+        # Purpose
+        if request.purpose_description:
+            parts.append(f"- Purpose: {request.purpose_description}")
+
+        # Industry context
+        if request.industry_description:
+            parts.append(f"- Industry: {request.industry_description}")
+
+        # Recipient relationship
+        if request.relationship_description:
+            parts.append(f"- Relationship: {request.relationship_description}")
+
+        # Response type (for replies)
+        if request.response_type_description:
+            parts.append(f"- Response type: {request.response_type_description}")
 
         if request.use_lists:
             parts.append("- Format: Use bullet points (with dashes -) and numbered lists where appropriate to organize information clearly")
@@ -60,6 +85,16 @@ class EmailService:
 
         if request.sender_name:
             parts.append(f"- Sender name (for signature): {request.sender_name}")
+
+        # Attachment reference
+        if request.include_attachment_reference:
+            parts.append("- Include a natural reference to an attachment (e.g., 'Please find attached...' or 'I have attached...')")
+
+        # Keywords to include
+        if request.keywords_to_include:
+            keywords = [k.strip() for k in request.keywords_to_include.split(",") if k.strip()]
+            if keywords:
+                parts.append(f"- MUST include these keywords/phrases naturally: {', '.join(keywords)}")
 
         if request.incoming_email:
             parts.append(
@@ -82,13 +117,25 @@ class EmailService:
         """
         try:
             data = json.loads(content)
+            subject = data.get("subject", "Generated Email")
+            body = data.get("body", content)
+            spam_score, spam_warnings = calculate_spam_score(subject, body)
             return EmailResponse(
-                subject=data.get("subject", "Generated Email"),
+                subject=subject,
                 subject_variants=data.get("subject_variants", []),
-                body=data.get("body", content),
+                body=body,
+                spam_score=spam_score,
+                spam_warnings=spam_warnings,
             )
         except json.JSONDecodeError:
-            return EmailResponse(subject="Generated Email", subject_variants=[], body=content)
+            spam_score, spam_warnings = calculate_spam_score("Generated Email", content)
+            return EmailResponse(
+                subject="Generated Email",
+                subject_variants=[],
+                body=content,
+                spam_score=spam_score,
+                spam_warnings=spam_warnings,
+            )
 
     async def generate(self, request: EmailRequest) -> EmailResponse:
         """Generate an email based on the request.

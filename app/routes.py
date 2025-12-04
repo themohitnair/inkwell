@@ -37,6 +37,14 @@ async def generate_email(
     politeness: int = Form(50),
     salutation_style: str = Form("standard"),
     sign_off_style: str = Form("professional"),
+    language: str = Form("english"),
+    audience_type: str = Form("general"),
+    purpose: str = Form("general"),
+    keywords_to_include: str = Form(""),
+    response_type: str = Form("none"),
+    industry: str = Form("general"),
+    recipient_relationship: str = Form("unknown"),
+    include_attachment_reference: bool = Form(False),
 ):
     """Generate an email based on form input."""
     email_request = EmailRequest(
@@ -54,6 +62,14 @@ async def generate_email(
         politeness=politeness,
         salutation_style=salutation_style,
         sign_off_style=sign_off_style,
+        language=language,
+        audience_type=audience_type,
+        purpose=purpose,
+        keywords_to_include=keywords_to_include,
+        response_type=response_type,
+        industry=industry,
+        recipient_relationship=recipient_relationship,
+        include_attachment_reference=include_attachment_reference,
     )
 
     try:
@@ -65,6 +81,10 @@ async def generate_email(
                 "subject": result.subject,
                 "subject_variants": result.subject_variants,
                 "body": result.body,
+                "word_count": result.word_count,
+                "read_time": result.read_time_display,
+                "spam_score": result.spam_score,
+                "spam_warnings": result.spam_warnings,
             },
         )
     except ValueError as e:
