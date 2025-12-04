@@ -74,9 +74,6 @@ class EmailService:
         if request.response_type_description:
             parts.append(f"- Response type: {request.response_type_description}")
 
-        if request.use_lists:
-            parts.append("- Format: Use bullet points (with dashes -) and numbered lists where appropriate to organize information clearly")
-
         parts.append(f"- Salutation: {request.salutation_description}")
         parts.append(f"- Sign-off: {request.sign_off_description}")
 

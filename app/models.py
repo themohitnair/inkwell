@@ -173,7 +173,6 @@ class EmailRequest(BaseModel):
     tone: int = Field(default=50, ge=0, le=100, description="Tone slider value (0=formal, 100=casual)")
     length: int = Field(default=50, ge=0, le=100, description="Length slider value (0=brief, 100=detailed)")
     temperature: int = Field(default=70, ge=0, le=100, description="Creativity slider (0=precise, 100=creative)")
-    use_lists: bool = Field(default=False, description="Use bullet points and numbered lists")
     custom_instructions: str = Field(default="", description="Additional instructions")
     urgency: int = Field(default=0, ge=0, le=100, description="Urgency slider (0=none, 100=critical)")
     cta_strength: int = Field(default=50, ge=0, le=100, description="CTA strength slider (0=subtle, 100=strong)")

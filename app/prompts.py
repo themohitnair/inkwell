@@ -20,14 +20,17 @@ JSON_FORMAT = """Respond with a JSON object containing exactly these fields:
   "body": "Your email body here"
 }
 
-IMPORTANT RULES:
+CRITICAL RULES (MUST FOLLOW):
 - NEVER use emojis anywhere in the email (subject or body)
+- STRICTLY follow the salutation style specified (if "no greeting" is specified, start directly with the email content)
+- STRICTLY follow the sign-off style specified (if "no sign-off" is specified, end without any closing)
 - Use proper email formatting with blank lines:
-  - Blank line after the greeting/salutation
+  - Blank line after the greeting/salutation (if present)
   - Blank line between paragraphs
-  - Blank line before the sign-off
+  - Blank line before the sign-off (if present)
 - Use \\n for newlines in the JSON string
-- Provide exactly 2 alternative subject lines in subject_variants"""
+- Provide exactly 2 alternative subject lines in subject_variants
+- Use bullet points (with dashes -) or numbered lists ONLY when they genuinely improve clarity (e.g., listing multiple items, steps, or options). Do not force lists where prose flows better."""
 
 
 PROMPTS = {
