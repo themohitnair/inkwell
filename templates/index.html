@@ -160,7 +160,7 @@
                             max="100"
                             value="50"
                             class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            oninput="updateToneLabel(this.value)"
+                            oninput="updateToneLabel(this.value); this.setAttribute('value', this.value);"
                         >
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>Formal</span>
@@ -181,7 +181,7 @@
                             max="100"
                             value="50"
                             class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            oninput="updateLengthLabel(this.value)"
+                            oninput="updateLengthLabel(this.value); this.setAttribute('value', this.value);"
                         >
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>Brief</span>
@@ -202,7 +202,7 @@
                             max="100"
                             value="70"
                             class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            oninput="updateTempLabel(this.value)"
+                            oninput="updateTempLabel(this.value); this.setAttribute('value', this.value);"
                         >
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>Precise</span>
@@ -223,7 +223,7 @@
                             max="100"
                             value="0"
                             class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            oninput="updateUrgencyLabel(this.value)"
+                            oninput="updateUrgencyLabel(this.value); this.setAttribute('value', this.value);"
                         >
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>None</span>
@@ -244,7 +244,7 @@
                             max="100"
                             value="50"
                             class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            oninput="updateCTALabel(this.value)"
+                            oninput="updateCTALabel(this.value); this.setAttribute('value', this.value);"
                         >
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>Subtle</span>
@@ -265,7 +265,7 @@
                             max="100"
                             value="50"
                             class="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                            oninput="updatePolitenessLabel(this.value)"
+                            oninput="updatePolitenessLabel(this.value); this.setAttribute('value', this.value);"
                         >
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
                             <span>Blunt</span>
@@ -611,6 +611,74 @@
                 setTimeout(() => button.innerHTML = originalText, 1500);
             });
         }
+
+            const emailForm = document.getElementById('email-form');
+            if (emailForm) {
+                emailForm.addEventListener('submit', (event) => {
+                    const ranges = emailForm.querySelectorAll('input[type="range"]');
+                    ranges.forEach((input) => {
+                        input.setAttribute('value', input.value);
+                    });
+                });
+            }
+
+            function typeWriter(element, text, speed = 8) {
+                if (!element) return;
+                let i = 0;
+                const cursor = '<span class="typing-cursor">|</span>';
+                element.innerHTML = cursor;
+
+                function type() {
+                    if (i < text.length) {
+                        const currentText = text.substring(0, i + 1);
+                        element.innerHTML = currentText.replace(/\n/g, '<br>') + cursor;
+                        i++;
+                        setTimeout(type, speed);
+                    } else {
+                        element.innerHTML = text.replace(/\n/g, '<br>');
+                    }
+                }
+
+                type();
+            }
+
+            function initEmailResult() {
+                const bodyElement = document.getElementById('email-body');
+                if (!bodyElement) return;
+                const fullBodyText = bodyElement.dataset.fullBody || '';
+                if (!fullBodyText) return;
+                typeWriter(bodyElement, fullBodyText);
+            }
+
+            function selectSubject(element, subject) {
+                const options = document.querySelectorAll('.subject-option');
+                options.forEach((opt) => {
+                    opt.classList.remove('selected', 'bg-blue-500/10');
+                    opt.classList.add('bg-black/20');
+                });
+                element.classList.add('selected', 'bg-blue-500/10');
+                element.classList.remove('bg-black/20');
+                const selected = document.getElementById('selected-subject');
+                if (selected) selected.textContent = subject;
+            }
+
+            function copyFullEmail(button) {
+                const subjectElement = document.getElementById('selected-subject');
+                const bodyElement = document.getElementById('email-body');
+                const subject = subjectElement ? subjectElement.textContent : '';
+                const fullBodyText = bodyElement ? (bodyElement.dataset.fullBody || '') : '';
+                copyToClipboard(`Subject: ${subject}\n\n${fullBodyText}`, button);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                initEmailResult();
+            });
+
+            document.body.addEventListener('htmx:afterSwap', (event) => {
+                if (event.target && event.target.id === 'result') {
+                    initEmailResult();
+                }
+            });
 
         // Keyboard shortcut: Cmd+Enter or Ctrl+Enter to generate
         document.addEventListener('keydown', (e) => {

@@ -92,14 +92,16 @@
             </button>
         </div>
         <div class="max-h-80 overflow-y-auto pr-2">
-            <p id="email-body" class="text-gray-200 whitespace-pre-wrap leading-relaxed"><span class="typing-cursor">|</span></p>
+            <p id="email-body" class="text-gray-200 whitespace-pre-wrap leading-relaxed" data-full-body="{{ body | e }}">
+                <span class="typing-cursor">|</span>
+            </p>
         </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="grid grid-cols-2 gap-2">
         <button
-            onclick="copyFullEmail()"
+            onclick="copyFullEmail(this)"
             class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 font-medium py-3 px-4 rounded-xl transition-all"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,52 +132,3 @@
         50% { opacity: 0; }
     }
 </style>
-
-<script>
-    // Store the full body text for copying
-    const fullBodyText = {{ body | tojson }};
-
-    // Typewriter effect with cursor
-    function typeWriter(element, text, speed = 8) {
-        let i = 0;
-        const cursor = '<span class="typing-cursor">|</span>';
-        element.innerHTML = cursor;
-
-        function type() {
-            if (i < text.length) {
-                // Handle newlines properly
-                const char = text.charAt(i);
-                const currentText = text.substring(0, i + 1);
-                element.innerHTML = currentText.replace(/\n/g, '<br>') + cursor;
-                i++;
-                setTimeout(type, speed);
-            } else {
-                // Remove cursor when done
-                element.innerHTML = text.replace(/\n/g, '<br>');
-            }
-        }
-        type();
-    }
-
-    // Start typewriter effect when loaded
-    const emailBody = document.getElementById('email-body');
-    typeWriter(emailBody, fullBodyText);
-
-    // Subject selection
-    function selectSubject(element, subject) {
-        document.querySelectorAll('.subject-option').forEach(opt => {
-            opt.classList.remove('selected', 'bg-blue-500/10');
-            opt.classList.add('bg-black/20');
-        });
-        element.classList.add('selected', 'bg-blue-500/10');
-        element.classList.remove('bg-black/20');
-        document.getElementById('selected-subject').textContent = subject;
-    }
-
-    // Copy full email with selected subject
-    function copyFullEmail() {
-        const subject = document.getElementById('selected-subject').textContent;
-        const body = fullBodyText;
-        copyToClipboard(`Subject: ${subject}\n\n${body}`, event.currentTarget);
-    }
-</script>
